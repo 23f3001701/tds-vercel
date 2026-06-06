@@ -10,21 +10,21 @@ with open(DATA_PATH) as f:
     telemetry = json.load(f)
 
 def compute(regions, threshold_ms):
-    result = {}
+    result = []
     for region in regions:
         records = [r for r in telemetry if r["region"] == region]
         if not records:
-            result[region] = {}
             continue
         latencies = [r["latency_ms"] for r in records]
         uptimes = [r["uptime_pct"] for r in records]
-        result[region] = {
+        result.append({
+            "region": region,
             "avg_latency": round(float(np.mean(latencies)), 4),
             "p95_latency": round(float(np.percentile(latencies, 95)), 4),
             "avg_uptime": round(float(np.mean(uptimes)), 4),
             "breaches": int(sum(1 for l in latencies if l > threshold_ms))
-        }
-    return result
+        })
+    return {"regions": result}
 
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
