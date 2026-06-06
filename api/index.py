@@ -1,16 +1,9 @@
 from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 import numpy as np
 import json, os
 
 app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "telemetry.json")
 with open(DATA_PATH) as f:
@@ -33,16 +26,28 @@ def compute(regions, threshold_ms):
         }
     return result
 
+CORS_HEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "*",
+}
+
+@app.options("/{path:path}")
+async def options_handler(path: str):
+    return JSONResponse(content={}, headers=CORS_HEADERS)
+
 @app.post("/")
 async def root_post(request: Request):
     body = await request.json()
-    return compute(body.get("regions", []), body.get("threshold_ms", 200))
+    result = compute(body.get("regions", []), body.get("threshold_ms", 200))
+    return JSONResponse(content=result, headers=CORS_HEADERS)
 
 @app.post("/api")
 async def api_post(request: Request):
     body = await request.json()
-    return compute(body.get("regions", []), body.get("threshold_ms", 200))
+    result = compute(body.get("regions", []), body.get("threshold_ms", 200))
+    return JSONResponse(content=result, headers=CORS_HEADERS)
 
 @app.get("/")
 def root_get():
-    return {"status": "ok"}
+    return JSONResponse(content={"status": "ok"}, headers=CORS_HEADERS)
