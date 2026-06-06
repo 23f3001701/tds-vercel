@@ -12,17 +12,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load telemetry data
 DATA_PATH = os.path.join(os.path.dirname(__file__), "telemetry.json")
 with open(DATA_PATH) as f:
     telemetry = json.load(f)
 
-@app.post("/api")
-async def analytics(request: Request):
-    body = await request.json()
-    regions = body.get("regions", [])
-    threshold_ms = body.get("threshold_ms", 200)
-
+def compute(regions, threshold_ms):
     result = {}
     for region in regions:
         records = [r for r in telemetry if r["region"] == region]
@@ -39,6 +33,16 @@ async def analytics(request: Request):
         }
     return result
 
+@app.post("/")
+async def root_post(request: Request):
+    body = await request.json()
+    return compute(body.get("regions", []), body.get("threshold_ms", 200))
+
+@app.post("/api")
+async def api_post(request: Request):
+    body = await request.json()
+    return compute(body.get("regions", []), body.get("threshold_ms", 200))
+
 @app.get("/")
-def root():
+def root_get():
     return {"status": "ok"}
